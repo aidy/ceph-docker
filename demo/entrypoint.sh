@@ -97,18 +97,18 @@ ceph ${CEPH_OPTS} osd pool set rbd size 1
 # OSD #
 #######
 
-if [ ! -e /var/lib/ceph/osd/${CLUSTER}-0/keyring ]; then
+if [ $(ls -l /var/lib/ceph/osd/${CLUSTER}-*/keyring 2>/dev/null | wc -l) -eq 0 ]; then
+  OSD_NUMBER=$(ceph ${CEPH_OPTS} osd create)
   # bootstrap OSD
-  mkdir -p /var/lib/ceph/osd/${CLUSTER}-0
-  ceph ${CEPH_OPTS} osd create
-  ceph-osd ${CEPH_OPTS} -i 0 --mkfs
-  ceph ${CEPH_OPTS} auth get-or-create osd.0 osd 'allow *' mon 'allow profile osd' -o /var/lib/ceph/osd/${CLUSTER}-0/keyring
+  mkdir -p /var/lib/ceph/osd/${CLUSTER}-${OSD_NUMBER}
+  ceph-osd ${CEPH_OPTS} -i ${OSD_NUMBER} --mkfs
+  ceph ${CEPH_OPTS} auth get-or-create osd.${OSD_NUMBER} osd 'allow *' mon 'allow profile osd' -o /var/lib/ceph/osd/${CLUSTER}-${OSD_NUMBER}/keyring
   ceph ${CEPH_OPTS} osd crush add 0 1 root=default host=$(hostname -s)
-  ceph-osd ${CEPH_OPTS} -i 0 -k /var/lib/ceph/osd/${CLUSTER}-0/keyring
+  ceph-osd ${CEPH_OPTS} -i ${OSD_NUMBER} -k /var/lib/ceph/osd/${CLUSTER}-${OSD_NUMBER}/keyring
 fi
 
 # start OSD
-ceph-osd ${CEPH_OPTS} -i 0
+ceph-osd ${CEPH_OPTS} -i ${OSD_NUMBER}
 
 
 #######
